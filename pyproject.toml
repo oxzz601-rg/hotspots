@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "hotspots"
+version = "0.1.0"
+description = "Rank files by churn x complexity so you know where refactoring pays off"
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+keywords = ["git", "refactoring", "code-quality", "metrics", "cli"]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "License :: OSI Approved :: MIT License",
+  "Topic :: Software Development :: Quality Assurance",
+]
+dependencies = []
+
+[project.optional-dependencies]
+dev = ["pytest>=7"]
+
+[project.scripts]
+hotspots = "hotspots.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+tool = {}
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
