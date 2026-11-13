@@ -26,8 +26,6 @@ hotspots = "hotspots.cli:main"
 [tool.setuptools.packages.find]
 where = ["src"]
 
-tool = {}
-
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-q"

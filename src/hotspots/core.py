@@ -1,14 +1,14 @@
 """Churn x complexity analysis over a git history.
 
 Churn alone flags files that change a lot. Complexity alone flags files that
-are hard to read. The intersection is where bugs cluster and where a refactor
-earns its keep, so that is what gets ranked.
+are hard to read. Their intersection is where bugs cluster and where a refactor
+earns its keep, so that is what gets ranked. Everything is offline and
+dependency-free.
 """
 
 from __future__ import annotations
 
 import collections
-import fnmatch
 import math
 import pathlib
 import re
@@ -80,10 +80,6 @@ class Report:
     contributors: int = 0
     skipped: int = 0
 
-    def top(self, count=None):
-        files = list(self.files)
-        return files if count is None else files[:count]
-
     def to_dict(self):
         return {
             "root": str(self.root),
@@ -144,7 +140,7 @@ def complexity_of(text):
     """A deliberately simple, language-agnostic complexity proxy."""
     lines = [line for line in text.splitlines() if line.strip()]
     branches = len(BRANCH.findall(text))
-    definitions = len(DEFINITION.findall(text)))
+    definitions = len(DEFINITION.findall(text))
     indents = [len(line) - len(line.lstrip(" \t")) for line in lines]
     average_indent = sum(indents) / len(indents) if indents else 0.0
     score = branches + definitions * 2 + average_indent / 2 + math.log1p(len(lines)) * 2
@@ -157,7 +153,7 @@ def complexity_of(text):
     }
 
 
-def analyze(root=".", since=None, extensions=None, top=None, max_files=800):
+def analyze(root=".", since=None, extensions=None, max_files=800):
     root = pathlib.Path(root)
     changes = _tracked_changes(root, since, extensions)
     if not changes:
@@ -178,8 +174,7 @@ def analyze(root=".", since=None, extensions=None, top=None, max_files=800):
         entry.authors[author] += 1
 
     for path, entry in stats.items():
-        suffix = pathlib.Path(path).suffix.lower()
-        if suffix in SKIP_SUFFIXES:
+        if pathlib.Path(path).suffix.lower() in SKIP_SUFFIXES:
             continue
         try:
             if (root / path).stat().st_size > 2_000_000:
@@ -218,8 +213,6 @@ def analyze(root=".", since=None, extensions=None, top=None, max_files=800):
                 pairs[(ordered[first_index], ordered[second_index])] += 1
     coupling = tuple((first, second, count) for (first, second), count in pairs.most_common(10) if count > 1)
 
-    if top:
-        ranked = ranked[:top]
     return Report(
         root=root,
         since=since,
@@ -263,11 +256,9 @@ def render_html(report, limit=40):
 
     rows = []
     for rank, item in enumerate(report.files[:limit], start=1):
-        numerator = min(1.0, item.score)
         rows.append(
-            "<tr><td>{}</td><td><code>{}</code></td><td><div class=\"bar\"><span style=\"width:{:.0f}%\"></span>{:.2f}</div></td>"
-            "<td>{}</td><td>{:,}</td><td>{:.0f}</td><td>{}</td></tr>".format(
-                rank, html.escape(item.path), numerator * 100, item.score, item.commits, item.churn,
+            "<tr><td>{}</td><td><code>{}</code></td><td>{:.2f}</td><td>{}</td><td>{:,}</td><td>{:.0f}</td><td>{}</td></tr>".format(
+                rank, html.escape(item.path), item.score, item.commits, item.churn,
                 item.complexity, html.escape(item.risk or "-"),
             )
         )
@@ -283,9 +274,6 @@ def render_html(report, limit=40):
 body{{font:15px/1.5 system-ui,sans-serif;max-width:70rem;margin:2rem auto;padding:0 1rem;color:#1c1e21}}
 code{{background:#f2f3f5;padding:.1rem .3rem;border-radius:3px}}
 table{{border-collapse:collapse;width:100%}}td,th{{border-bottom:1px solid #e4e6eb;padding:.4rem .6rem;text-align:left}}
-.bar{{position:relative;background:#f2f3f5;border-radius:3px;padding:0 .3rem}}
-.bar span{{position:absolute;left:0;top:0;bottom:0;background:#cfe3ff;border-radius:3px;z-index:0}}
-.bar{{z-index:1}}
 </style></head><body>
 <h1>Refactor hotspots</h1>
 <p>{commits} commits by {people} contributor(s) in <code>{root}</code>.</p>
