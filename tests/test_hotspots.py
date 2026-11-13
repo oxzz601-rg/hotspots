@@ -27,13 +27,16 @@ def repo(tmp_path):
 
     core = tmp_path / "core.py"
     helper = tmp_path / "helper.py"
-    helper.write_text("def tiny(x):\n    return x\n")
     for index in range(4):
         core.write_text(
             "def process(value):\n"
-            + "".join("    if value:\n        for item in value:\n            if item and item > {}:\n                value = value + 1\n".format(index) for _ in range(3))
+            + "".join(
+                "    if value:\n        for item in value:\n            if item and item > {}:\n                value = value + 1\n".format(index)
+                for _ in range(3)
+            )
             + "    return value\n"
         )
+        helper.write_text("def tiny(x):\n    return x\n\n# revision {}\n".format(index))
         run("add", "core.py", "helper.py")
         run("commit", "-q", "-m", "change {}".format(index), author="Ada" if index < 3 else "Bob")
     return tmp_path
@@ -72,7 +75,7 @@ def test_extension_filter(repo):
     assert analyze(repo, extensions=(".py",)).files
 
 
-def test_unreadable_or_empty_repository(tmp_path):
+def test_empty_and_missing_repositories(tmp_path):
     subprocess.run(["git", "-C", str(tmp_path), "init", "-q"], check=True)
     empty = analyze(tmp_path)
     assert empty.files == () and empty.commits == 0
