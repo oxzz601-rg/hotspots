@@ -155,6 +155,15 @@ def complexity_of(text):
 
 def analyze(root=".", since=None, extensions=None, max_files=800):
     root = pathlib.Path(root)
+    try:
+        _git(root, ["rev-parse", "--git-dir"])
+    except RuntimeError as exc:
+        raise RuntimeError("{} is not a git repository".format(root)) from exc
+    try:
+        _git(root, ["rev-parse", "--verify", "HEAD"])
+    except RuntimeError:
+        return Report(root=root, since=since)  # repository has no commits yet
+
     changes = _tracked_changes(root, since, extensions)
     if not changes:
         return Report(root=root, since=since)
